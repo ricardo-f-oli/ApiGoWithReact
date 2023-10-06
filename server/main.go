@@ -3,18 +3,24 @@ package main
 import (
 	_ "fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"log"
 )
 
 type Todo struct {
-	ID    int `json:"id"`
-	Title int `json:"title"`
-	Done  int `json:"done"`
-	Body  int `json:"body"`
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+	Done  bool   `json:"done"`
+	Body  string `json:"body"`
 }
 
 func main() {
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
 
 	app.Get("/heathcheck", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
@@ -31,5 +37,20 @@ func main() {
 		return c.JSON(todos)
 
 	})
+
+	app.Patch("/api/todos/:id/done", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			return c.Status(401).SendString("Invalid id")
+		}
+		for i, t := range todos {
+			if t.ID == id {
+				todos[i].Done = true
+				break
+			}
+		}
+		return c.JSON(todos)
+	})
+
 	log.Fatal(app.Listen(":4000"))
 }
